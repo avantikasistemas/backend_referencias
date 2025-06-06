@@ -45,77 +45,6 @@ class Querys:
                         controlado = 'N'
 
                     fecha_creacion = datetime.now()
-                    
-                    
-
-                    # Validar que el generico exista en referencias_gen y obtener moneda
-                    sql_generico = """
-                        SELECT moneda FROM referencias_gen WHERE generico = :generico
-                    """
-                    result_generico = self.db.execute(
-                        text(sql_generico), {
-                            "generico": str(ref["generico"]).strip()
-                        }
-                    ).fetchone()
-
-                    if not result_generico:
-                        raise CustomException(f"El generico '{str(ref['generico']).strip()}' no existe en referencias_gen.")
-                    moneda = result_generico[0]
-
-                    # Obtener el factor más reciente para la moneda
-                    sql_factor = """
-                        SELECT TOP(1) factor FROM monedas_factores WHERE moneda = :moneda ORDER BY fecha DESC
-                    """
-                    result_factor = self.db.execute(
-                        text(sql_factor), {
-                            "moneda": moneda
-                        }
-                    ).fetchone()
-                    if not result_factor:
-                        raise CustomException(f"No se encontró factor para la moneda '{moneda}'.")
-                    factor = result_factor[0]
-                    
-                    if moneda in ['4', '5']:
-                        factor = factor * 1.35
-
-                    # Consultar o actualizar/insetar en ref_gen_costo
-                    sql_check_costo = """
-                        SELECT 1 FROM ref_gen_costo WHERE Codigo = :codigo
-                    """
-                    result_costo = self.db.execute(
-                        text(sql_check_costo), {
-                            "codigo": str(ref["codigo"]).strip()
-                        }
-                    ).fetchone()
-
-                    if result_costo:
-                        # Actualizar registro existente
-                        sql_update_costo = """
-                            UPDATE ref_gen_costo
-                            SET Generico = :generico, Costo_Base = :costo_base
-                            WHERE Codigo = :codigo
-                        """
-                        self.db.execute(
-                            text(sql_update_costo), {
-                                "codigo": str(ref["codigo"]).strip(),
-                                "generico": str(ref["generico"]).strip(),
-                                "costo_base": ref.get("costo_unitario", 0)
-                            }
-                        )
-                    else:
-                        # Insertar nuevo registro
-                        sql_insert_costo = """
-                            INSERT INTO ref_gen_costo (Codigo, Generico, Costo_Base)
-                            VALUES (:codigo, :generico, :costo_base)
-                        """
-                        self.db.execute(
-                            text(sql_insert_costo), {
-                                "codigo": str(ref["codigo"]).strip(),
-                                "generico": str(ref["generico"]).strip(),
-                                "costo_base": ref.get("costo_unitario", 0)
-                            }
-                        )
-                    costo_unitario = ref.get("costo_unitario", 0) * factor
 
                     # Realizar la inserción en la base de datos
                     self.db.execute(
@@ -132,7 +61,7 @@ class Querys:
                             "subgrupo": str(ref["subgrupo"]).strip() if ref["subgrupo"] else None,
                             "nit": str(ref["nit"]).strip() if ref["nit"] else None,
                             "porcentaje_iva": ref.get("porcentaje_iva", 0),
-                            "costo_unitario": costo_unitario,
+                            "costo_unitario": ref.get("costo_unitario", 0),
                             "maneja_inventario": ref.get("maneja_inventario", ''),
                             "und_1": ref.get("und_1", ''),
                             "can_1": ref.get("can_1", ''),
@@ -194,6 +123,20 @@ class Querys:
                             }
                         )
                     self.db.commit()
+                    
+                    # Insertar en referencias_imp
+                    sql_imp = """
+                        INSERT INTO referencias_imp (codigo, costo_unitario_FOB, requiere_registro)
+                        VALUES (:codigo, :costo_unitario, 'N')
+                    """
+                    self.db.execute(
+                        text(sql_imp), {
+                            "codigo": str(ref["codigo"]).strip(),
+                            "costo_unitario": ref.get("costo_unitario", 0)
+                        }
+                    )
+                    self.db.commit()
+                    
 
             return {"insertados": cont, "encontrados": referencia_encontrada}
 
