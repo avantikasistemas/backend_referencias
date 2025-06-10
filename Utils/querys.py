@@ -10,7 +10,7 @@ class Querys:
         self.tools = Tools()
         self.query_params = dict()
 
-    # Query para validar el año de la proyección si existe.
+    # Query para guardar referencias.
     def guardar_referencias(self, referencias: list):
 
         try:
@@ -140,6 +140,20 @@ class Querys:
 
             return {"insertados": cont, "encontrados": referencia_encontrada}
 
+        except Exception as ex:
+            traceback.print_exc()
+            print(str(ex))
+            raise CustomException(str(ex))
+        finally:
+            self.db.close()
+
+    # Query para actualizar referencias.
+    def actualizar_referencias(self, sql, params):
+
+        try:
+            self.db.execute(text(sql), params)
+            self.db.commit()
+            return True
         except Exception as ex:
             traceback.print_exc()
             print(str(ex))

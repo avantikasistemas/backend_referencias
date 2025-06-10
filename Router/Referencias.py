@@ -19,3 +19,10 @@ def guardar_referencias(request: Request, db: Session = Depends(get_db)):
     data = getattr(request.state, "json_data", {})
     response = Referencias(db).guardar_referencias(data)
     return response
+
+@referencias_router.post('/actualizar_referencias', tags=["Referencias"], response_model=dict)
+@http_decorator
+def actualizar_referencias(request: Request, db: Session = Depends(get_db)):
+    data = getattr(request.state, "json_data", {})
+    response = Referencias(db).actualizar_referencias(data)
+    return response
