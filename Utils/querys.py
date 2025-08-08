@@ -16,14 +16,22 @@ class Querys:
         try:
             # Convertir la lista de referencias a un formato adecuado para la inserción
             referencia_encontrada = list()
+            referencia_anulada = list()
             cont = 0
             for ref in referencias:
                 sql = """
-                SELECT * FROM referencias WHERE codigo = :codigo AND ref_anulada = 'N'
+                SELECT * FROM referencias WHERE codigo = :codigo
                 """
                 result = self.db.execute(text(sql), {"codigo": ref["codigo"]}).fetchone()
                 if result:
-                    referencia_encontrada.append(ref["codigo"])
+
+                    # Ya existe (N = activa, S = anulada)
+                    if result.ref_anulada == 'N':
+                        referencia_encontrada.append(result.codigo)
+                    else:
+                        referencia_anulada.append(result.codigo)
+                    # En ambos casos NO insertamos
+                    continue
                     
                 else:
                     maneja_lote = ''
@@ -138,7 +146,11 @@ class Querys:
                     self.db.commit()
                     
 
-            return {"insertados": cont, "encontrados": referencia_encontrada}
+            return {
+                "insertados": cont, 
+                "encontrados": referencia_encontrada,
+                "anulados": referencia_anulada
+            }
 
         except Exception as ex:
             traceback.print_exc()

@@ -61,6 +61,7 @@ class Referencias:
                 excel_io, 
                 engine='openpyxl',
                 dtype={
+                    "codigo": str,
                     "clase": str,
                     "contable": str,
                     "generico": str,
@@ -150,20 +151,51 @@ class Referencias:
             # Guardar las referencias en la base de datos
             refs = self.querys.guardar_referencias(referencias)
             
-            if not refs["encontrados"] and refs["insertados"] > 0:
-                return self.tools.output(200, "Referencias guardadas con éxito.",)
+            if not refs["encontrados"] and refs["insertados"] > 0 and refs["anulados"]:
+                mensaje = f"""Referencias guardadas con éxito. \n
+                    Las siguientes referencias existen pero están anuladas: \n
+                    {', '.join(refs['anulados'])}
+                """
+                return self.tools.output(200, mensaje)
 
             if refs["encontrados"] and refs["insertados"] > 0:
-                mensaje = f"Referencias guardadas con éxito. Las siguientes referencias ya existen: {', '.join(refs['encontrados'])}"
+                mensaje = f"""
+                    Referencias guardadas con éxito. \n
+                    Las siguientes referencias ya existen: \n
+                    {', '.join(refs['encontrados'])}"""
                 return self.tools.output(200, mensaje)
             
-            if not refs["encontrados"] and not refs["insertados"] > 0:
-                mensaje = f"No hay referencias para guardar."
+            if not refs["encontrados"] and not refs["insertados"] > 0 and refs["anulados"]:
+                mensaje = f"""
+                    No hay referencias para guardar.\n
+                    Las siguientes referencias existen pero están anuladas: \n
+                    {', '.join(refs['anulados'])}
+                """
                 return self.tools.output(200, mensaje)
             
-            if refs["encontrados"] and not refs["insertados"] > 0:
-                mensaje = f"Las siguientes referencias ya existen: {', '.join(refs['encontrados'])}"
+            if refs["encontrados"] and not refs["insertados"] > 0 and refs["anulados"]:
+                mensaje = f"""No se insertaron nuevas referencias. \n
+                Las siguientes referencias ya existen: \n
+                {', '.join(refs['encontrados'])} \n
+                Las siguientes referencias existen pero están anuladas: \n
+                {', '.join(refs['anulados'])}
+                """
                 return self.tools.output(200, mensaje)
+            
+            if refs["encontrados"] and not refs["insertados"] > 0 and not refs["anulados"]:
+                mensaje = f"""No se insertaron nuevas referencias. \n
+                Las siguientes referencias ya existen: \n
+                {', '.join(refs['encontrados'])}
+                """
+                return self.tools.output(200, mensaje)
+
+            return self.tools.output(
+                200, 
+                f"""Referencias insertadas: {refs["insertados"]}. \n
+                Referencias existentes: {', '.join(refs['encontrados'])} \n
+                Referencias anuladas: {', '.join(refs['anulados'])}
+                """
+            )
 
         except CustomException as e:
             traceback.print_exc()
