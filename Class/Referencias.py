@@ -79,7 +79,14 @@ class Referencias:
             if df.shape[0] == 0:
                 raise CustomException("El archivo no contiene datos.")
 
-            # 5. Convertir DataFrame a lista de diccionarios
+            # 5. Limpiar todos los valores de strings: eliminar tabs, saltos de línea y espacios en los extremos
+            for col in df.columns:
+                if df[col].dtype == 'object':  # Solo para columnas de tipo string
+                    df[col] = df[col].apply(
+                        lambda x: str(x).replace('\t', '').replace('\n', '').replace('\r', '').strip() if pd.notna(x) and x != '' else x
+                    )
+
+            # 6. Convertir DataFrame a lista de diccionarios
             data = df.fillna("").to_dict(orient='records')
 
             return data
@@ -130,7 +137,14 @@ class Referencias:
             if df.shape[0] == 0:
                 raise CustomException("El archivo no contiene datos.")
 
-            # 5. Convertir DataFrame a lista de diccionarios
+            # 5. Limpiar todos los valores de strings: eliminar tabs, saltos de línea y espacios en los extremos
+            for col in df.columns:
+                if df[col].dtype == 'object':  # Solo para columnas de tipo string
+                    df[col] = df[col].apply(
+                        lambda x: str(x).replace('\t', '').replace('\n', '').replace('\r', '').strip() if pd.notna(x) and x != '' else x
+                    )
+
+            # 6. Convertir DataFrame a lista de diccionarios
             data = df.fillna("").to_dict(orient='records')
 
             return data
